@@ -10,43 +10,65 @@ public class SpectatorMode : MonoBehaviour
     public GameObject Player;
     public bool? isInSpectatorMode = null;
 
-    public void SetVisible()
-    {
-        if (Player == null) return;
-        var material = Player.GetComponent<Renderer>().material;
-        material.color = material.color.SetAlpha(1f);
-    }
-    
     public void SetInVisible()
     {
         if (Player == null) return;
-        var material = Player.GetComponent<Renderer>().material;
+        Material material = Player.GetComponent<Renderer>().material;
         material.color = material.color.SetAlpha(HKMP_SpectatorMod.settings.visibility);
     }
 
-    public void LateUpdate()
+    public void SetVars(GameObject player, bool spectator)
     {
-        if (isInSpectatorMode == null)
+        Player = player;
+        isInSpectatorMode = spectator;
+        if (spectator)
         {
-            return;
-        }
-        if (isInSpectatorMode.Value)
-        {
-            SetInVisible();
+            Player.layer = (int)GlobalEnums.PhysLayers.GRASS;
         }
         else
         {
-            SetVisible();
+            if (Player.GetComponent<DamageHero>().enabled)
+            {
+                Player.layer = (int)GlobalEnums.PhysLayers.ENEMIES;
+            }
+            else
+            {
+                Player.layer = (int)GlobalEnums.PhysLayers.PLAYER;
+            }
+        }
+    }
+    
+    public void LateUpdate()
+    {
+        if (isInSpectatorMode != null && isInSpectatorMode.Value)
+        {
+            SetInVisible();
         }
     }
 
     public void OnDestroy()
     {
-        SetVisible();
+        if (Player == null) return;
+        if (Player.GetComponent<DamageHero>().enabled)
+        {
+            Player.layer = (int)GlobalEnums.PhysLayers.ENEMIES;
+        }
+        else
+        {
+            Player.layer = (int)GlobalEnums.PhysLayers.PLAYER;
+        }
     }
 
     public void OnDisable()
     {
-        SetVisible();
+        if (Player == null) return;
+        if (Player.GetComponent<DamageHero>().enabled)
+        {
+            Player.layer = (int)GlobalEnums.PhysLayers.ENEMIES;
+        }
+        else
+        {
+            Player.layer = (int)GlobalEnums.PhysLayers.PLAYER;
+        }
     }
 }

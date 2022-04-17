@@ -26,25 +26,23 @@ public class SpectatorModClient : ClientAddon
             ToClientPackets.BroadcastSpectorMode,
             packetData =>
             {
-                var player = this.clientApi.ClientManager.GetPlayer(packetData.playerId);
+                var player = clientApi.ClientManager.GetPlayer(packetData.playerId);
                 if (player is { IsInLocalScene: true })
                 {
-                    if (SpectatorModeComponentCache.TryGetValue(player, out var spectatorMode))
+                    SpectatorMode spectatorMode;
+                    if (SpectatorModeComponentCache.TryGetValue(player, out spectatorMode))
                     {
                         if (spectatorMode == null)
                         {
                             spectatorMode = getAddSpectatorMode(player);
                         }
-
-                        spectatorMode.Player = player.PlayerContainer;
-                        spectatorMode.isInSpectatorMode = packetData.isInSpectatorMode;
                     }
                     else
                     {
                         spectatorMode = AddPlayerToCache(player);
-                        spectatorMode.Player = player.PlayerContainer;
-                        spectatorMode.isInSpectatorMode = packetData.isInSpectatorMode;
                     }
+                    
+                    spectatorMode.SetVars(player.PlayerObject, packetData.isInSpectatorMode);
                 }
             });
 
@@ -63,6 +61,15 @@ public class SpectatorModClient : ClientAddon
                 UnityEngine.Object.Destroy(spectatorMode);
                 SpectatorModeComponentCache.Remove(player);
             }
+        };
+
+        clientApi.ClientManager.PlayerConnectEvent += (player) =>
+        {
+            SendRequest(player.Id);
+        };
+        clientApi.ClientManager.PlayerEnterSceneEvent += (player) =>
+        {
+            SendRequest(player.Id);
         };
 
         ModHooks.HeroUpdateHook += () =>
@@ -92,18 +99,17 @@ public class SpectatorModClient : ClientAddon
 
     private SpectatorMode getAddSpectatorMode(IClientPlayer player)
     {
-        SpectatorMode htop;
-        if (player.PlayerContainer.GetComponent<SpectatorMode>() == null)
+        SpectatorMode spectatorMode;
+        if (player.PlayerObject.GetComponent<SpectatorMode>() == null)
         {
-            htop = player.PlayerContainer.AddComponent<SpectatorMode>();
-            htop.Player = player.PlayerContainer;
+            spectatorMode = player.PlayerObject.AddComponent<SpectatorMode>();
         }
         else
         {
-            htop = player.PlayerContainer.GetComponent<SpectatorMode>();
+            spectatorMode = player.PlayerObject.GetComponent<SpectatorMode>();
         }
 
-        return htop;
+        return spectatorMode;
     }
     
     public void SendUpdate()
